@@ -371,7 +371,7 @@ html:active ::-webkit-scrollbar-track {
   <button onclick="topFunction()" id="myBtn" title="Vai Su">⤴️</button>
   <div class="container">
     <div class="sidebar">
-      <div class="header">
+      <div class="site-header">
         <h1>Progetti</h1>
         <button id="closeSidebar" class="close-sidebar" aria-label="Chiudi menu">✕</button>
         <?php if ($loggedIn): ?>
@@ -923,4 +923,5 @@ function topFunction() {
         <p>&copy; <script>document.write(new Date().getFullYear());</script> <a href="https://mrlab.altervista.org/" target="_blank" style="text-decoration: none; color: #fff; font-weight: bold;">MRLab Community</a> Tutti i diritti riservati</p>   
     </footer>
 </body>
+
 </html>
