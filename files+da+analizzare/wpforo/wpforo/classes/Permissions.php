@@ -1,0 +1,764 @@
+<?php
+
+namespace wpforo\classes;
+
+use stdClass;
+use WP_User;
+
+// Exit if accessed directly
+if( ! defined( 'ABSPATH' ) ) exit;
+
+class Permissions {
+	public $default;
+	public $accesses;
+	public $cans;
+
+	function __construct() {
+		$this->init_defaults();
+		$this->init_cans();
+		$this->init();
+		add_action( 'wpforo_after_init_classes', function() {
+			if( WPF()->is_installed() ) $this->init_current_user_accesses();
+		} );
+	}
+
+	private function init_defaults() {
+		$this->default         = new stdClass;
+		$this->default->access = [
+			'accessid' => 0,
+			'access'   => '',
+			'title'    => '',
+			'cans'     => '',
+		];
+		$this->default->cans   = [
+			'vf'   => __( 'Can view forum', 'wpforo' ),
+			'enf'  => __( 'Can enter forum', 'wpforo' ),
+			'ct'   => __( 'Can create topic', 'wpforo' ),
+			'vt'   => __( 'Can view topic', 'wpforo' ),
+			'ent'  => __( 'Can enter topic', 'wpforo' ),
+			'et'   => __( 'Can edit topic', 'wpforo' ),
+			'dt'   => __( 'Can delete topic', 'wpforo' ),
+			'cr'   => __( 'Can post reply', 'wpforo' ),
+			'ocr'  => __( 'Can reply to own topic', 'wpforo' ),
+			'vr'   => __( 'Can view replies', 'wpforo' ),
+			'er'   => __( 'Can edit replies', 'wpforo' ),
+			'dr'   => __( 'Can delete replies', 'wpforo' ),
+			'eot'  => __( 'Can edit own topic', 'wpforo' ),
+			'eor'  => __( 'Can edit own reply', 'wpforo' ),
+			'dot'  => __( 'Can delete own topic', 'wpforo' ),
+			'dor'  => __( 'Can delete own reply', 'wpforo' ),
+			'tag'  => __( 'Can add tags', 'wpforo' ),
+			'sb'   => __( 'Can subscribe', 'wpforo' ),
+			'l'    => __( 'Can like', 'wpforo' ),
+			'r'    => __( 'Can report', 'wpforo' ),
+			's'    => __( 'Can set topic sticky', 'wpforo' ),
+			'p'    => __( 'Can set topic private', 'wpforo' ),
+			'op'   => __( 'Can set own topic private', 'wpforo' ),
+			'vp'   => __( 'Can view private topic', 'wpforo' ),
+			'au'   => __( 'Can approve/unapprove content', 'wpforo' ),
+			'sv'   => __( 'Can set topic solved', 'wpforo' ),
+			'osv'  => __( 'Can set own topic solved', 'wpforo' ),
+			'v'    => __( 'Can vote', 'wpforo' ),
+			'vop'  => __( 'Can leave voice posts', 'wpforo' ),
+			'vlp'  => __( 'Can listen voice posts', 'wpforo' ),
+			'a'    => __( 'Can attach file', 'wpforo' ),
+			'va'   => __( 'Can view attached files', 'wpforo' ),
+			'at'   => __( 'Can set topic answered', 'wpforo' ),
+			'oat'  => __( 'Can set own topic answered', 'wpforo' ),
+			'aot'  => __( 'Can answer own question', 'wpforo' ),
+			'cot'  => __( 'Can close topic', 'wpforo' ),
+			'mt'   => __( 'Can move topic', 'wpforo' ),
+			// Poll-related permissions moved to wpForo Polls plugin
+		];
+	}
+
+	private function init_cans() {
+		$this->cans = apply_filters( 'wpforo_init_cans', $this->default->cans );
+	}
+
+	private function init() {
+		if( WPF()->is_installed() ) {
+			if( $accesses = $this->get_accesses() ) {
+				foreach( $accesses as $access ) {
+					$this->accesses[ intval( $access['accessid'] ) ] = $this->accesses[ $access['access'] ] = $access;
+				}
+			}
+		}
+	}
+
+	private function init_current_user_accesses() {
+		WPF()->current_user_accesses = $this->get_forum_accesses_by_usergroup();
+	}
+
+	public function fix_access( $access ) {
+		$access         = wpforo_array_args_cast_and_merge( (array) $access, $this->default->access );
+		$cans           = array_map( '__return_zero', $this->cans );
+		$access['cans'] = maybe_unserialize( $access['cans'] );
+		if( is_array( $access['cans'] ) ) {
+			$access['cans'] = wpforo_array_args_cast_and_merge( $access['cans'], $cans );
+		} else {
+			$access['cans'] = $cans;
+		}
+
+		return $access;
+	}
+
+	/**
+	 *
+	 * @param string|int $access
+	 *
+	 * @return array access row by access key
+	 */
+	function get_access( $access ) {
+		if( wpforo_is_id( $access ) ) {
+			$access = intval( $access );
+		} else {
+			$access = sanitize_text_field( $access );
+		}
+		if( ! empty( $this->accesses[ $access ] ) ) return $this->accesses[ $access ];
+
+		$sql = "SELECT * FROM " . WPF()->tables->accesses;
+		if( is_int( $access ) ) {
+			$sql .= " WHERE `accessid` = %d";
+		} else {
+			$sql .= " WHERE `access` = %s";
+		}
+
+		$access_row = $this->fix_access( WPF()->db->get_row( WPF()->db->prepare( $sql, $access ), ARRAY_A ) );
+		/**
+		 * Filter after getting an access row to allow add-ons to adjust permissions dynamically.
+		 * Example: Polls add-on sets default poll permissions per access level.
+		 *
+		 * @since 2.4.0
+		 * @param array $access_row
+		 */
+		$access_row = apply_filters( 'wpforo_after_get_access', $access_row );
+		return $access_row;
+	}
+
+
+	/**
+	 * get all accesses from accesses table
+	 *
+	 * @return array|null
+	 */
+	function get_accesses() {
+		$sql = "SELECT * FROM " . WPF()->tables->accesses . " ORDER BY `accessid`";
+
+		$rows = array_map( [ $this, 'fix_access' ], WPF()->db->get_results( $sql, ARRAY_A ) );
+		// Allow add-ons to adjust each access after retrieval (e.g., apply default poll permissions)
+		$rows = array_map( function( $row ) { return apply_filters( 'wpforo_after_get_access', $row ); }, $rows );
+		return $rows;
+	}
+
+	/**
+	 * @param array $access
+	 *
+	 * @return int|bool inserted id or false
+	 */
+	function add( $access ) {
+		if( ! ( $access['title'] = sanitize_text_field( $access['title'] ) ) ) {
+			WPF()->notice->add( 'Access title is empty', 'error' );
+
+			return false;
+		}
+
+		if( ! $access['access'] ) $access['access'] = uniqid();
+
+		/**
+		 * Allow add-ons to adjust access data before adding.
+		 * Example: Polls add-on injects default poll permissions.
+		 *
+		 * @since 2.4.0
+		 * @param array $access
+		 */
+		$access = apply_filters( 'wpforo_before_add_access', $access );
+
+		$i    = 2;
+		$slug = $access['access'];
+		while( WPF()->db->get_var( WPF()->db->prepare( "SELECT `access` FROM " . WPF()->tables->accesses . " WHERE `access` = %s", sanitize_text_field( $slug ) ) ) ) {
+			$slug = $access['access'] . '-' . $i;
+			$i ++;
+		}
+
+		if( WPF()->db->insert(
+			WPF()->tables->accesses, [
+			'title'  => $access['title'],
+			'access' => sanitize_text_field(
+				$slug
+			),
+			'cans'   => serialize(
+				$access['cans']
+			),
+		],  [ '%s', '%s', '%s', ]
+		) ) {
+			$access['accessid'] = WPF()->db->insert_id;
+			WPF()->notice->add( 'Access successfully added', 'success' );
+
+			return $access['accessid'];
+		}
+
+		WPF()->notice->add( 'Access add error', 'error' );
+
+		return false;
+	}
+
+	/**
+	 * @param array $access
+	 *
+	 * @return bool|int edited id or false
+	 */
+	function edit( $access ) {
+		/**
+		 * Allow add-ons to adjust access data before editing.
+		 * Example: Polls add-on injects/ensures poll permissions are present.
+		 *
+		 * @since 2.4.0
+		 * @param array $access
+		 */
+		$access = apply_filters( 'wpforo_before_edit_access', $access );
+		if( false !== WPF()->db->update( WPF()->tables->accesses, [
+				'title' => sanitize_text_field( $access['title'] ),
+				'cans'  => serialize( $access['cans'] ),
+			], [
+			                                 'accessid' => $access['accessid'],
+		                                 ], [ '%s', '%s' ], [ '%d' ] ) ) {
+			WPF()->notice->add( 'Access successfully edited', 'success' );
+
+			return $access['accessid'];
+		}
+
+		WPF()->notice->add( 'Access edit error', 'error' );
+
+		return false;
+	}
+
+	/**
+	 * @param int $accessid
+	 *
+	 * @return bool|int deleted id or false
+	 */
+	function delete( $accessid ) {
+		$accessid = intval( $accessid );
+		if( ! $accessid ) {
+			WPF()->notice->add( 'Access delete error', 'error' );
+
+			return false;
+		}
+
+		if( false !== WPF()->db->delete( WPF()->tables->accesses, [ 'accessid' => $accessid ], [ '%d' ] ) ) {
+			WPF()->notice->add( 'Access successfully deleted', 'success' );
+
+			return $accessid;
+		}
+
+		WPF()->notice->add( 'Access delete error', 'error' );
+
+		return false;
+	}
+
+	function forum_can( $do, $forumid = null, $groupids = null ) {
+		/**
+		 * filter for other add-ons to manage can_attach bool value.
+		 * e.g. PM add-on attachment function.
+		 */
+		$filter_forum_can = apply_filters( 'wpforo_permissions_forum_can', null, $do, $forumid, $groupids );
+		if( ! is_null( $filter_forum_can ) ) return (int) (bool) $filter_forum_can;
+
+		if( ( is_null( $groupids ) && ! WPF()->current_user_groupids ) || ! $do ) return 0;
+
+		//User Forum accesses from Current Object of Current user
+		if( is_null( $groupids ) && WPF()->current_user_accesses ) {
+			$forum_id = (int) ( is_null( $forumid ) ? wpfval( WPF()->current_object, 'forum', 'forumid' ) : ( wpfkey( $forumid, 'forumid' ) ? $forumid['forumid'] : $forumid ) );
+			if( $forum_id && ( $forum_accesses = wpfval( WPF()->current_user_accesses, $forum_id ) ) ) {
+				foreach( $forum_accesses as $cans ) {
+					if( (int) wpfval( $cans, $do ) ) return 1;
+				}
+			}
+
+			return 0;
+		}
+
+		//Use Custom User Forum Accesses
+		$forum = is_null( $forumid ) ? WPF()->current_object['forum'] : ( ! wpfkey( $forumid, 'forumid' ) ? WPF()->forum->get_forum( $forumid ) : $forumid );
+		if( $forum ) {
+			$permissions = maybe_unserialize( $forum['permissions'] );
+			if( is_null( $groupids ) ) $groupids = WPF()->current_user_groupids;
+			$groupids = array_map( 'intval', (array) $groupids );
+			foreach( $groupids as $groupid ) {
+				if( $_access = wpfval( $permissions, $groupid ) ) {
+					$access = $this->get_access( $_access );
+					if( (int) wpfval( $access, 'cans', $do ) ) return 1;
+				}
+			}
+		}
+
+		return 0;
+	}
+
+	function user_can_manage_user( $user_id, $managing_user_id ) {
+		if( ! $user_id || ! $managing_user_id ) return false;
+		if( $user_id == $managing_user_id ) return true;
+
+		$user       = new WP_User( $user_id );
+		$user_level = $this->user_wp_level( $user );
+		if( ! empty( $user->roles ) && is_array( $user->roles ) ) $user_role = array_shift( $user->roles );
+
+		$managing_user       = new WP_User( $managing_user_id );
+		$managing_user_level = $this->user_wp_level( $managing_user );
+		if( ! empty( $managing_user->roles ) && is_array( $managing_user->roles ) ) $managing_user_role = array_shift( $managing_user->roles );
+
+		if( (int) $user_level > (int) $managing_user_level ) {
+			return true;
+		} elseif( $user_id == 1 && $user_role === 'administrator' ) {
+			return true;
+		} elseif( (int) $user_level === (int) $managing_user_level ) {
+			$member                   = WPF()->member->get_member( $user_id );
+			$managing_member          = WPF()->member->get_member( $managing_user_id );
+			$user_wpforo_can          = WPF()->usergroup->can( 'em', $member['groupids'] );
+			$managing_user_wpforo_can = WPF()->usergroup->can( 'em', $managing_member['groupids'] );
+			if( $user_wpforo_can && ! $managing_user_wpforo_can ) {
+				return true;
+			} else {
+				return false;
+			}
+		} elseif( $user_id != 1 && $managing_user_id == 1 && $managing_user_role === 'administrator' ) {
+			return false;
+		} else {
+			return false;
+		}
+	}
+
+	function user_wp_level( $user_object ) {
+		$level  = 0;
+		$levels = [];
+		if( is_int( $user_object ) ) {
+			$user_object = new WP_User( $user_object );
+		}
+		if( isset( $user_object->allcaps ) && is_array( $user_object->allcaps ) && ! empty( $user_object->allcaps ) ) {
+			foreach( $user_object->allcaps as $level_key => $level_value ) {
+				if( strpos( (string) $level_key, 'level_' ) !== false && $level_value == 1 ) {
+					$levels[] = intval( str_replace( 'level_', '', $level_key ) );
+				}
+			}
+			if( ! empty( $levels ) ) {
+				$level = max( $levels );
+			}
+		}
+
+		return $level;
+	}
+
+	function can_edit_user( $userid ) {
+		if( ! $userid ) return false;
+		if( ! $this->user_can_edit_account( $userid ) ) {
+			WPF()->notice->clear();
+			WPF()->notice->add( 'Permission denied', 'error' );
+			wp_safe_redirect( wpforo_get_request_uri() );
+			exit();
+		}
+
+		return true;
+	}
+
+	public function can_link() {
+		if( ! WPF()->usergroup->can( 'em' ) ) {
+			$posts = WPF()->member->member_approved_posts( WPF()->current_userid );
+			$posts = intval( $posts );
+			if( ( $min_posts = wpforo_setting( 'antispam', 'min_number_posts_to_link' ) ) && $posts <= $min_posts ) return false;
+		}
+
+		return true;
+	}
+
+	public function can_attach( $forumid = null ) {
+		if( ! $forumid ) $forumid = null;
+
+		/**
+		 * filter for other add-ons to manage can_attach bool value.
+		 * e.g. PM add-on attachment function.
+		 */
+		$filter_wpforo_can_attach = apply_filters( 'wpforo_can_attach', null, $forumid );
+		if( ! is_null( $filter_wpforo_can_attach ) ) return (bool) $filter_wpforo_can_attach;
+
+		if( ! $this->forum_can( 'a', $forumid ) ) return false;
+		if( ! WPF()->usergroup->can( 'em' ) ) {
+			$posts = WPF()->member->member_approved_posts( WPF()->current_userid );
+			$posts = intval( $posts );
+			if( ( $min_posts = wpforo_setting( 'antispam', 'min_number_posts_to_attach' ) ) && $posts <= $min_posts ) return false;
+		}
+
+		return true;
+	}
+
+	public function can_attach_file_type( $ext = '' ) {
+		if( ! WPF()->usergroup->can( 'em' ) && WPF()->member->current_user_is_new() && in_array( $ext, wpforo_setting( 'antispam', 'limited_file_ext' ) ) ) return false;
+
+		return true;
+	}
+
+	/**
+	 * Check if user can post now based on flood protection settings
+	 *
+	 * @param string $flood_reason Reference to store the reason if blocked
+	 * @return bool|string True if can post, false if blocked, 'unapprove' if should be unapproved
+	 */
+	public function can_post_now( &$flood_reason = '' ) {
+		if( wpforo_is_admin() || ( defined( 'IS_GO2WPFORO' ) && IS_GO2WPFORO ) ) {
+			return true;
+		}
+
+		// Users with "Dashboard - Moderate Topics & Posts" permission bypass flood protection
+		if( WPF()->usergroup->can( 'aum' ) ) {
+			return true;
+		}
+
+		$userid  = WPF()->current_userid;
+		$email   = $userid ? '' : WPF()->current_user_email;
+		$groupid = WPF()->current_user_groupid;
+		if( WPF()->member->current_user_is_new() ) {
+			$groupid = 0;
+		}
+
+		// Check for temporary ban first
+		if( $this->is_flood_banned() ) {
+			$flood_reason = 'temp_ban';
+			return false;
+		}
+
+		// Legacy flood interval check (per user group)
+		if( $flood_interval = WPF()->usergroup->get_flood_interval( $groupid ) ) {
+			$hour_ago = gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS );
+			$args = [
+				'userid'    => $userid,
+				'email'     => $email,
+				'orderby'   => '`created` DESC, `postid` DESC',
+				'row_count' => 1,
+				'where'     => "`created` >= '$hour_ago'",
+			];
+			$items_count = 0;
+			$lastpost    = WPF()->post->get_posts( $args, $items_count, false );
+			if( $lasttime = wpfval( $lastpost, 0, 'created' ) ) {
+				$lasttime = strtotime( $lasttime . ' GMT' );
+				$nowtime  = time();
+				$diff     = $nowtime - $lasttime;
+				if( $diff < $flood_interval ) {
+					$flood_reason = 'interval';
+					return false;
+				}
+			}
+		}
+
+		// Advanced flood protection checks
+		if( ! wpforo_setting( 'antispam', 'flood_protection_enabled' ) ) {
+			return true;
+		}
+
+		// Check posts per minute
+		$posts_per_minute = (int) wpforo_setting( 'antispam', 'flood_posts_per_minute' );
+		if( $posts_per_minute > 0 ) {
+			$minute_ago = gmdate( 'Y-m-d H:i:s', time() - 60 );
+			$count = $this->get_user_post_count_since( $userid, $email, $minute_ago );
+			if( $count >= $posts_per_minute ) {
+				$flood_reason = 'per_minute';
+				return $this->handle_flood_action();
+			}
+		}
+
+		// Check posts per hour
+		$posts_per_hour = (int) wpforo_setting( 'antispam', 'flood_posts_per_hour' );
+		if( $posts_per_hour > 0 ) {
+			$hour_ago = gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS );
+			$count = $this->get_user_post_count_since( $userid, $email, $hour_ago );
+			if( $count >= $posts_per_hour ) {
+				$flood_reason = 'per_hour';
+				return $this->handle_flood_action();
+			}
+		}
+
+		// IP-based flood protection (tracked via transients since posts table has no IP column)
+		if( wpforo_setting( 'antispam', 'flood_ip_protection_enabled' ) ) {
+			$posts_per_ip_hour = (int) wpforo_setting( 'antispam', 'flood_posts_per_ip_hour' );
+			if( $posts_per_ip_hour > 0 ) {
+				$ip = $this->get_user_ip();
+				if( $ip ) {
+					$count = $this->get_ip_post_count_in_window( $ip, HOUR_IN_SECONDS );
+					if( $count >= $posts_per_ip_hour ) {
+						$flood_reason = 'ip_per_hour';
+						return $this->handle_flood_action();
+					}
+				}
+			}
+		}
+
+		// All checks passed - record IP post attempt for IP-based tracking
+		if( wpforo_setting( 'antispam', 'flood_ip_protection_enabled' ) ) {
+			$ip = $this->get_user_ip();
+			if( $ip ) {
+				$this->record_ip_post_attempt( $ip );
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Get the current user's IP address
+	 *
+	 * @return string|null IP address or null if not available
+	 */
+	private function get_user_ip() {
+		// Check for forwarded IP first (behind proxy/load balancer)
+		$headers = [ 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR' ];
+		foreach( $headers as $header ) {
+			if( ! empty( $_SERVER[ $header ] ) ) {
+				$ip = $_SERVER[ $header ];
+				// HTTP_X_FORWARDED_FOR can contain multiple IPs, get the first one
+				if( strpos( $ip, ',' ) !== false ) {
+					$ip = trim( explode( ',', $ip )[0] );
+				}
+				if( filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+					return $ip;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Get post count for a user since a specific time
+	 *
+	 * @param int    $userid User ID
+	 * @param string $email  Email for guests
+	 * @param string $since  MySQL datetime string
+	 * @return int Post count
+	 */
+	private function get_user_post_count_since( $userid, $email, $since ) {
+		$posts_table = WPF()->tables->posts;
+
+		if( $userid ) {
+			$count = WPF()->db->get_var( WPF()->db->prepare(
+				"SELECT COUNT(*) FROM `{$posts_table}` WHERE `userid` = %d AND `created` >= %s",
+				$userid,
+				$since
+			) );
+		} elseif( $email ) {
+			$count = WPF()->db->get_var( WPF()->db->prepare(
+				"SELECT COUNT(*) FROM `{$posts_table}` WHERE `email` = %s AND `created` >= %s",
+				$email,
+				$since
+			) );
+		} else {
+			return 0;
+		}
+
+		return (int) $count;
+	}
+
+	/**
+	 * Get post count for an IP address within a time window (using transients)
+	 *
+	 * @param string $ip             IP address
+	 * @param int    $window_seconds Time window in seconds
+	 * @return int Post count
+	 */
+	private function get_ip_post_count_in_window( $ip, $window_seconds ) {
+		$key = 'wpforo_ip_posts_' . md5( $ip );
+		$timestamps = get_transient( $key );
+		if( ! is_array( $timestamps ) ) {
+			return 0;
+		}
+
+		// Filter to only include timestamps within the window
+		$cutoff = time() - $window_seconds;
+		$valid_timestamps = array_filter( $timestamps, function( $ts ) use ( $cutoff ) {
+			return $ts >= $cutoff;
+		});
+
+		return count( $valid_timestamps );
+	}
+
+	/**
+	 * Record an IP post attempt for flood tracking
+	 *
+	 * @param string $ip IP address
+	 */
+	private function record_ip_post_attempt( $ip ) {
+		$key = 'wpforo_ip_posts_' . md5( $ip );
+		$timestamps = get_transient( $key );
+		if( ! is_array( $timestamps ) ) {
+			$timestamps = [];
+		}
+
+		// Add current timestamp
+		$timestamps[] = time();
+
+		// Clean old entries (keep last hour only)
+		$cutoff = time() - HOUR_IN_SECONDS;
+		$timestamps = array_filter( $timestamps, function( $ts ) use ( $cutoff ) {
+			return $ts >= $cutoff;
+		});
+
+		// Re-index array and store with 1-hour expiration
+		$timestamps = array_values( $timestamps );
+		set_transient( $key, $timestamps, HOUR_IN_SECONDS );
+	}
+
+	/**
+	 * Handle flood action based on settings
+	 *
+	 * @return bool|string False to block, 'unapprove' to allow but unapprove
+	 */
+	private function handle_flood_action() {
+		$action = wpforo_setting( 'antispam', 'flood_action' );
+
+		if( $action === 'temp_ban' ) {
+			$this->set_flood_ban();
+			return false;
+		}
+
+		if( $action === 'unapprove' ) {
+			return 'unapprove';
+		}
+
+		// Default: block
+		return false;
+	}
+
+	/**
+	 * Set a temporary flood ban for the current user/IP
+	 */
+	private function set_flood_ban() {
+		$duration = (int) wpforo_setting( 'antispam', 'flood_temp_ban_duration' );
+		$ban_until = time() + ( $duration * 60 );
+
+		$userid = WPF()->current_userid;
+		$ip = $this->get_user_ip();
+
+		// Store ban in transient (keyed by user ID or IP)
+		if( $userid ) {
+			set_transient( 'wpforo_flood_ban_user_' . $userid, $ban_until, $duration * 60 );
+		}
+		if( $ip ) {
+			set_transient( 'wpforo_flood_ban_ip_' . md5( $ip ), $ban_until, $duration * 60 );
+		}
+	}
+
+	/**
+	 * Check if the current user/IP is temporarily banned for flooding
+	 *
+	 * @return bool True if banned
+	 */
+	public function is_flood_banned() {
+		$userid = WPF()->current_userid;
+		$ip = $this->get_user_ip();
+
+		// Check user ban
+		if( $userid ) {
+			$ban_until = get_transient( 'wpforo_flood_ban_user_' . $userid );
+			if( $ban_until && time() < $ban_until ) {
+				return true;
+			}
+		}
+
+		// Check IP ban
+		if( $ip ) {
+			$ban_until = get_transient( 'wpforo_flood_ban_ip_' . md5( $ip ) );
+			if( $ban_until && time() < $ban_until ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get remaining flood ban time in seconds
+	 *
+	 * @return int Seconds remaining, 0 if not banned
+	 */
+	public function get_flood_ban_remaining() {
+		$userid = WPF()->current_userid;
+		$ip = $this->get_user_ip();
+		$max_remaining = 0;
+
+		if( $userid ) {
+			$ban_until = get_transient( 'wpforo_flood_ban_user_' . $userid );
+			if( $ban_until && time() < $ban_until ) {
+				$max_remaining = max( $max_remaining, $ban_until - time() );
+			}
+		}
+
+		if( $ip ) {
+			$ban_until = get_transient( 'wpforo_flood_ban_ip_' . md5( $ip ) );
+			if( $ban_until && time() < $ban_until ) {
+				$max_remaining = max( $max_remaining, $ban_until - time() );
+			}
+		}
+
+		return $max_remaining;
+	}
+
+	public function get_forum_accesses_by_usergroup( $groupids = [] ) {
+		$forum_accesses = [];
+		if( ! $groupids ) $groupids = WPF()->current_user_groupids;
+		if( ( $groupids = array_map( 'intval', (array) $groupids ) ) && ( $forums = WPF()->forum->get_forums() ) ) {
+			foreach( $forums as $forum ) {
+				if( $permissions = maybe_unserialize( $forum['permissions'] ) ) {
+					foreach( $groupids as $groupid ) {
+						$access = wpfval( $permissions, $groupid );
+						if( $_access = $this->get_access( $access ) ) {
+							if( $cans = wpfval( $_access, 'cans' ) ) {
+								if( ! wpfkey( $forum_accesses, $forum['forumid'], $access ) ) $forum_accesses[ $forum['forumid'] ][ $access ] = $cans;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return apply_filters( 'wpforo_permissions_forum_accesses_by_usergroup', $forum_accesses, $groupids );
+	}
+
+	public function show_accesses_selectbox( $selected = [], $exclude = [] ) {
+		$accesses = $this->get_accesses();
+		foreach( $accesses as $accesse ) {
+			if( in_array( $accesse['access'], (array) $exclude ) ) continue;
+			printf(
+				'<option value="%1$s" %2$s>%3$s</option>',
+				esc_attr( $accesse['access'] ),
+				in_array( $accesse['access'], (array) $selected ) ? 'selected' : '',
+				esc_html( $accesse['title'] )
+			);
+		}
+	}
+
+	/**
+	 * @param array|int $owner
+	 * @param array|int $user
+	 *
+	 * @return bool
+	 */
+	public function user_can_edit_account( $owner = [], $user = [] ) {
+		if( ! $user ) $user = WPF()->current_user;
+		if( ! $owner ) $owner = WPF()->current_object['user'];
+		if( wpforo_is_id( $owner ) ) $owner = WPF()->member->get_member( $owner );
+		if( wpforo_is_id( $user ) ) $user = WPF()->member->get_member( $user );
+		if( ! $user || ! $owner ) return false;
+		$is_users_same = wpforo_is_users_same( $user, $owner );
+
+		return wpforo_user_is( $user['userid'], 'admin' ) || ( WPF()->usergroup->can( 'em', $user['groupids'] ) && $this->user_can_manage_user(
+					$user['userid'],
+					$owner['userid']
+				) ) || ( $is_users_same && wpforo_user_is( $user['userid'], 'moderator' ) ) || ( $is_users_same && $user['posts'] >= wpforo_setting( 'antispam', 'min_number_posts_to_edit_account' ) );
+	}
+
+	public function can_report( $forumid, $groupids = null ): bool {
+		if( ( is_null( $groupids ) && ! WPF()->current_user_groupids ) ) return false;
+		if( is_null( $groupids ) ) $groupids = WPF()->current_user_groupids;
+
+		$res = WPF()->current_userid && ! in_array( WPF()->current_user_status, [ 'banned', 'trashed' ] ) && ! WPF()->member->current_user_is_new() && $this->forum_can( 'r', $forumid, $groupids );
+
+		return apply_filters( 'wpforo_can_report', $res, $forumid, $groupids );
+	}
+}
