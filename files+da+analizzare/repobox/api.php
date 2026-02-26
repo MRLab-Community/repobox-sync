@@ -21,40 +21,31 @@ if (!$file || !isPathAllowed($baseDir . '/' . $file, $baseDir)) {
 $fullPath = $baseDir . '/' . $file;
 
 switch ($action) {
-    case 'delete':
-        if (is_file($fullPath)) {
-            unlink($fullPath);
-        } elseif (is_dir($fullPath)) {
-            array_map('unlink', glob("$fullPath/*"));
-            rmdir($fullPath);
-        }
-        break;
-
     case 'rename':
-        if (!$newName) exit('Nome nuovo richiesto');
-        $newPath = dirname($fullPath) . '/' . basename($newName);
-        rename($fullPath, $newPath);
-        break;
+  $newName = $_POST['new_name'] ?? '';
+  if (!$newName) exit('Nuovo nome richiesto');
+  $newPath = dirname($fullPath) . '/' . $newName;
+  if (rename($fullPath, $newPath)) {
+    echo 'Rinominato';
+  } else {
+    http_response_code(500);
+    echo 'Errore nel rinominare';
+  }
+  break;
 
-    case 'move':
-        if (!$target) exit('Destinazione richiesta');
-        $targetPath = $baseDir . '/' . ltrim($target, '/');
-        if (!is_dir($targetPath)) mkdir($targetPath, 0755, true);
-        $newPath = $targetPath . '/' . basename($fullPath);
-        rename($fullPath, $newPath);
-        break;
-   case 'copy':
-        if (!$target) exit('Destinazione richiesta');
-        $targetPath = $baseDir . '/' . ltrim($target, '/');
-        if (!is_dir($targetPath)) mkdir($targetPath, 0755, true);
-        $newPath = $targetPath . '/' . basename($fullPath);
-        if (copy($fullPath, $newPath)) {
-        echo 'Copiato';
-        } else {
-        http_response_code(500);
-        echo 'Errore nella copia';
-        }
-        break;     
+case 'move':
+  $target = $_POST['target'] ?? '';
+  if (!$target) exit('Destinazione richiesta');
+  $targetPath = $baseDir . '/' . ltrim($target, '/');
+  if (!is_dir($targetPath)) mkdir($targetPath, 0755, true);
+  $newPath = $targetPath . '/' . basename($fullPath);
+  if (rename($fullPath, $newPath)) {
+    echo 'Spostato';
+  } else {
+    http_response_code(500);
+    echo 'Errore nello spostare';
+  }
+  break;     
 
     default:
         http_response_code(400);
