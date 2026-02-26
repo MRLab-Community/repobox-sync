@@ -84,64 +84,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>🔒 Accesso a Repobox</title>
+  <title>📦 Repobox – Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <header class="site-header">
-   <div class="site-logo"> 📦 Repobox </div>
-  </header>
   <style>
-    body { font-family: sans-serif; background: #f6f8fa; }
-    .container { max-width: 400px; margin: auto; background: white; padding: 10% 30px 30px 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h2 { margin-bottom: 20px; color: #24292f; }
-    input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #d1d5da; border-radius: 6px; }
-    button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
-    button:hover { background: #1557b0; }
-    .error { color: red; margin-bottom: 15px; }
-    .info { font-size: 12px; color: #666; margin-top: 15px; }
-    .site-footer {
-    background-color: #2e808d;
-    color: white;
-    text-align: center;
-    width: 100%;
-    position: fixed;
-    bottom: 0;
-    line-height: 0.2;
-}
-.site-header {
-background-color: #3f8e9b;
-    color: white;
-    text-align: left;
-    padding: 1em 0;
-    /* Aggiungi queste proprietà per fissare il footer in fondo alla pagina */
-    /* Queste regole potrebbero variare a seconda della struttura HTML, ma sono un buon punto di partenza */
-    width: 100%;
-    top: 0;
-}
-.site-logo{
-padding-left: 20px;
-font-size: 25px;
-font-weight: bold;
-}
-h1 {
-    color: #1a73e8;
-}
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f6f8fa;
+      color: #24292f;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: #3a90a5;
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header img {
+      height: 24px;
+    }
+    .content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+    }
+    input {
+      width: 93%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1557b0;
+    }
+    .footer {
+      background: #2c7a85;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📦 Repobox Login</h1>
-    <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
-    <form method="post">
-      <input type="text" name="username" placeholder="Username" required>
-      <input type="password" name="password" placeholder="Password" required>
-      <button type="submit">Accedi</button>
-    </form>
-    <p class="info">
-      ⚠️ Dopo <?= MAX_ATTEMPTS ?> tentativi falliti, l'accesso sarà bloccato per <?= LOCKOUT_TIME / 60 ?> minuti.
-    </p>
+  <div class="header">
+    <h1>📦 Repobox</h1>
   </div>
-  <footer class="site-footer">
-        <p>&copy; <script>document.write(new Date().getFullYear());</script> Repobox - <a href="https://mrlab.altervista.org/" target="_blank" style="text-decoration: none; color: #fff; font-weight: bold;">MRLab Community</a> Tutti i diritti riservati</p>   
-    </footer>
+
+  <div class="content">
+    <div class="card">
+      <h2>🔑 Repobox Login 🔑</h2>
+      <form method="POST">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Accedi</button>
+      </form>
+      <?php if (isset($_GET['error'])): ?>
+        <p style="color:#d32f2f; margin-top:12px;">❌ Credenziali errate</p>
+      <?php endif; ?>
+      <p style="font-size:12px; color:#666; margin-top:16px;">
+        ⚠️ Dopo 3 tentativi falliti, l’accesso sarà bloccato per 15 minuti.
+      </p>
+    </div>
+  </div>
+
+  <div class="footer">
+    © 2026 Repobox - MRLab Community • Tutti i diritti riservati
+  </div>
 </body>
-</html>
+</html>
