@@ -184,4 +184,4 @@ $total = count($files);
     syncNext();
   </script>
 </body>
-</html>
+</html>
