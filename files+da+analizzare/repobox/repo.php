@@ -88,8 +88,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'list-folders') {
   <meta charset="UTF-8" />
   <title>📦 Repobox – Repository Personale</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  
-   <style>
+  <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f6f8fa; color: #24292f; line-height: 1.6; }
     .container { display: flex; min-height: 100vh; flex-direction: column; }
@@ -115,7 +114,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'list-folders') {
     /* Hamburger menu su mobile */
     .menu-toggle {
       display: none;
-      position: fixed!important;
+      position: fixed;
       top: 10px;
       left: 10px;
       z-index: 100;
@@ -129,7 +128,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'list-folders') {
     @media (max-width: 767px) {
       .menu-toggle {
         display: block;
-        position: fixed!important;
       }
       .sidebar {
         position: fixed;
@@ -236,6 +234,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'list-folders') {
       font-size: 12px;
       z-index: 10;
     }
+    .folder:hover .file-actions,
     .file:hover .file-actions { display: block; }
     .file-actions button {
       background: none;
@@ -252,7 +251,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'list-folders') {
     .file-tree li {
       list-style-type: none;
     }
-    /* Elementi per allineamento riga per riga */
     .line-number,
     .code-line {
       min-height: 1.6em;
@@ -261,96 +259,38 @@ if (isset($_GET['action']) && $_GET['action'] === 'list-folders') {
       margin: 0;
       display: block;
     }
-    .site-footer {
-    background-color: #2e808d;
-    color: white;
-    text-align: center;
-    padding: 0.3em 0;
-    /* Aggiungi queste proprietà per fissare il footer in fondo alla pagina */
-    /* Queste regole potrebbero variare a seconda della struttura HTML, ma sono un buon punto di partenza */
-    width: 100%;
-    position: fixed;
-    bottom: 0;
-}
-.site-header {
-background-color: #3f8e9b;
-    color: white;
-    text-align: left;
-    padding: 0.8em 0;
-    width: 100%;
-    top: 0;
-}
-.site-logo{
-padding-left: 20px;
-font-size: 25px;
-font-weight: bold;
-}
-@media (max-width: 767px) {
-.site-header {
- position: sticky;
-}
-.site-logo{
-padding-left: 80px;
-font-size: 25px;
-font-weight: bold;
-}
-}
-#myBtn {
-  display: none; /* Hidden by default */
-  position: fixed; /* Fixed/sticky position */
-  bottom: 30px; /* Place the button at the bottom of the page */
-  right: 30px; /* Place the button 30px from the right */
-  z-index: 99; /* Make sure it does not overlap */
-  border: none; /* Remove borders */
-  outline: none; /* Remove outline */
-  cursor: pointer; /* Add a mouse pointer on hover */
-  padding: 15px; /* Some padding */
-  font-size: 20px;
-  background: none;
-  opacity: 0.5;
-}
-#myBtn:hover {
-  opacity: 0.8;
-}
-@media (max-width: 767px) {
-#myBtn {
-bottom: 60px; /* Place the button at the bottom of the page */
-right: -5px; /* Place the button 30px from the right */
-}
-}
-/* Scrollbar nascosta di default, visibile solo durante lo scroll */
-html {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s;
-}
-html:hover,
-html:focus,
-html:active {
-  scrollbar-color: #a0a0a0 #f0f0f0; /* thumb e track */
-}
-/* Chrome, Edge, Safari */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 4px;
-}
-html:hover ::-webkit-scrollbar-thumb,
-html:focus ::-webkit-scrollbar-thumb,
-html:active ::-webkit-scrollbar-thumb {
-  background-color: #a0a0a0;
-}
-html:hover ::-webkit-scrollbar-track,
-html:focus ::-webkit-scrollbar-track,
-html:active ::-webkit-scrollbar-track {
-  background: #f0f0f0;
-}
+    /* Scrollbar nascosta finché non serve */
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+      transition: scrollbar-color 0.3s;
+    }
+    html:hover,
+    html:focus,
+    html:active {
+      scrollbar-color: #a0a0a0 #f0f0f0;
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: transparent;
+      border-radius: 4px;
+    }
+    html:hover ::-webkit-scrollbar-thumb,
+    html:focus ::-webkit-scrollbar-thumb,
+    html:active ::-webkit-scrollbar-thumb {
+      background-color: #a0a0a0;
+    }
+    html:hover ::-webkit-scrollbar-track,
+    html:focus ::-webkit-scrollbar-track,
+    html:active ::-webkit-scrollbar-track {
+      background: #f0f0f0;
+    }
   </style>
   <!-- Highlight.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
@@ -360,10 +300,7 @@ html:active ::-webkit-scrollbar-track {
   </script>
 </head>
 <body>
-<header class="site-header">
-     <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation">☰</button> <div class="site-logo"> 📦 Repobox </div>
-  </header>
-  <button onclick="topFunction()" id="myBtn" title="Vai Su">⤴️</button>
+  <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation">☰</button>
   <div class="container">
     <div class="sidebar">
       <div class="header">
@@ -416,63 +353,70 @@ html:active ::-webkit-scrollbar-track {
           return r.text();
         })
         .then(code => {
-  const lang = getLanguageFromPath(path);
-  const lines = code.split('\n');
-  // Applica highlight.js al codice intero
-  let highlightedCode = code;
-  if (!<?php echo $loggedIn ? 'true' : 'false'; ?>) {
-    // Solo in lettura (non in modifica)
-    const tempPre = document.createElement('pre');
-    const tempCode = document.createElement('code');
-    tempCode.className = `language-${lang}`;
-    tempCode.textContent = code;
-    tempPre.appendChild(tempCode);
-    hljs.highlightElement(tempCode);
-    highlightedCode = tempCode.innerHTML; // HTML con evidenziazione
-  }
-  // Suddividi in righe (già evidenziato)
-  const highlightedLines = highlightedCode.split('\n');
-  const lineNumbersHtml = lines.map((_, i) => `<div class="line-number">${i + 1}</div>`).join('');
-  const codeLinesHtml = highlightedLines.map(line => `<div class="code-line">${line}</div>`).join('');
-  if (<?php echo $loggedIn ? 'true' : 'false'; ?>) {
-  // Modalità modifica: codice evidenziato + contenteditable sicuro
-  const tempCode = document.createElement('code');
-  tempCode.className = `language-${lang}`;
-  tempCode.textContent = code;
-  hljs.highlightElement(tempCode);
-  const highlightedHtml = tempCode.innerHTML;
-  // Suddividi in righe mantenendo l'evidenziazione
-  const highlightedLines = highlightedHtml.split('\n');
-  const codeLinesHtml = highlightedLines.map(line => `<div class="code-line">${line}</div>`).join('');
-  contentDiv.innerHTML = `
-    <h3>${escapeHtml(path)}
-  <?php if ($loggedIn): ?>
-  <div style="float:right; font-size:12px;">
-    <button onclick="copyCode('${escapeHtml(path)}')" title="Copia codice" >📋</button>
-    <button onclick="downloadFile('${escapeHtml(path)}')" title="Download file" >⬇️</button>
-  </div>
-  <?php endif; ?>
-</h3>
-    <div class="editor-toolbar">
-      <button onclick="saveFile()">✅ Salva</button>
-      <button onclick="loadFile('${escapeHtml(path)}')">↺ Ricarica</button>
-    </div>
-    <div class="code-with-linenumbers">
-      <div class="code-linenumbers">${lineNumbersHtml}</div>
-      <div class="code-content" id="codeEditor" contenteditable="true" spellcheck="false">${codeLinesHtml}</div>
-    </div>
-  `;
-} else {
-  // Modalità lettura: codice evidenziato
-  contentDiv.innerHTML = `
-    <h3>${escapeHtml(path)}</h3>
-    <div class="code-with-linenumbers">
-      <div class="code-linenumbers">${lineNumbersHtml}</div>
-      <pre class="code-content">${codeLinesHtml}</pre>
-    </div>
-  `;
-}
-})
+          const lang = getLanguageFromPath(path);
+          const lines = code.split('\n');
+
+          // Applica highlight.js al codice intero
+          let highlightedCode = code;
+          if (!<?php echo $loggedIn ? 'true' : 'false'; ?>) {
+            const tempPre = document.createElement('pre');
+            const tempCode = document.createElement('code');
+            tempCode.className = `language-${lang}`;
+            tempCode.textContent = code;
+            tempPre.appendChild(tempCode);
+            hljs.highlightElement(tempCode);
+            highlightedCode = tempCode.innerHTML;
+          }
+
+          const highlightedLines = highlightedCode.split('\n');
+          const lineNumbersHtml = lines.map((_, i) => `<div class="line-number">${i + 1}</div>`).join('');
+          let codeLinesHtml = '';
+
+          if (<?php echo $loggedIn ? 'true' : 'false'; ?>) {
+            const tempCode = document.createElement('code');
+            tempCode.className = `language-${lang}`;
+            tempCode.textContent = code;
+            hljs.highlightElement(tempCode);
+            const highlightedHtml = tempCode.innerHTML;
+            const highlightedLines = highlightedHtml.split('\n');
+            codeLinesHtml = highlightedLines.map(line => `<div class="code-line">${line}</div>`).join('');
+
+            contentDiv.innerHTML = `
+              <h3>${escapeHtml(path)}
+                <div style="float:right; font-size:12px;">
+                  <button onclick="copyCode('${escapeHtml(path)}')" title="Copia codice">📋</button>
+                  <button onclick="downloadFile('${escapeHtml(path)}')" title="Download file">⬇️</button>
+                </div>
+              </h3>
+              <div class="editor-toolbar">
+                <button onclick="saveFile()">✅ Salva</button>
+                <button onclick="loadFile('${escapeHtml(path)}')">↺ Ricarica</button>
+              </div>
+              <div class="code-with-linenumbers">
+                <div class="code-linenumbers">${lineNumbersHtml}</div>
+                <div class="code-content" id="codeEditor" contenteditable="true" spellcheck="false">${codeLinesHtml}</div>
+              </div>
+            `;
+            // Aggiungi toolbar in fondo
+            const footerToolbar = document.createElement('div');
+            footerToolbar.className = 'editor-toolbar';
+            footerToolbar.style.marginTop = '16px';
+            footerToolbar.innerHTML = `
+              <button onclick="saveFile()">✅ Salva</button>
+              <button onclick="loadFile('${escapeHtml(path)}')">↺ Ricarica</button>
+            `;
+            contentDiv.appendChild(footerToolbar);
+          } else {
+            codeLinesHtml = highlightedLines.map(line => `<div class="code-line">${line}</div>`).join('');
+            contentDiv.innerHTML = `
+              <h3>${escapeHtml(path)}</h3>
+              <div class="code-with-linenumbers">
+                <div class="code-linenumbers">${lineNumbersHtml}</div>
+                <pre class="code-content">${codeLinesHtml}</pre>
+              </div>
+            `;
+          }
+        })
         .catch(() => {
           contentDiv.innerHTML = '<p style="color:red">❌ Impossibile caricare il file.</p>';
         });
@@ -489,28 +433,6 @@ html:active ::-webkit-scrollbar-track {
         alert(msg === 'Salvato' ? '✅ File salvato!' : '❌ Errore.');
       });
     }
-    function copyCode(filePath) {
-  const codeEditor = document.getElementById('codeEditor');
-  const content = codeEditor ? codeEditor.innerText : document.querySelector('.code-content').textContent;
-  navigator.clipboard.writeText(content).then(() => {
-    alert('✅ Codice copiato negli appunti!');
-  }).catch(() => {
-    alert('❌ Impossibile copiare.');
-  });
-}
-function downloadFile(filePath) {
-  const codeEditor = document.getElementById('codeEditor');
-  const content = codeEditor ? codeEditor.innerText : document.querySelector('.code-content').textContent;
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filePath.split('/').pop();
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
     function deleteFile(path) {
       if (!confirm('Eliminare ' + path + '?')) return;
       fetch('api.php', {
@@ -657,6 +579,76 @@ function downloadFile(filePath) {
         });
       };
     }
+    function renameFolder(path) {
+      const newName = prompt('Nuovo nome cartella:', path.split('/').pop());
+      if (!newName) return;
+      fetch('api.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=rename&file=${encodeURIComponent(path)}&new_name=${encodeURIComponent(newName)}`
+      }).then(() => location.reload());
+    }
+    function moveFolder(path) {
+      const modal = document.createElement('div');
+      modal.style.position = 'fixed';
+      modal.style.top = '0';
+      modal.style.left = '0';
+      modal.style.width = '100%';
+      modal.style.height = '100%';
+      modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+      modal.style.display = 'flex';
+      modal.style.alignItems = 'center';
+      modal.style.justifyContent = 'center';
+      modal.style.zIndex = '1000';
+      const content = document.createElement('div');
+      content.style.background = 'white';
+      content.style.padding = '20px';
+      content.style.borderRadius = '8px';
+      content.style.maxWidth = '400px';
+      content.style.width = '90%';
+      content.innerHTML = `
+        <h3>📁 Sposta cartella</h3>
+        <p>Cartella: <strong>${escapeHtml(path)}</strong></p>
+        <label>Seleziona destinazione:</label>
+        <select id="moveFolderSelect" style="width:100%; padding:6px; margin:8px 0; border:1px solid #ddd; border-radius:4px;">
+          <option value="">-- Scegli una cartella --</option>
+        </select>
+        <div style="margin-top:15px;">
+          <button id="moveConfirmBtn" style="background:#1a73e8; color:white; border:none; padding:8px 16px; border-radius:4px; margin-right:8px;">Sposta</button>
+          <button id="moveCancelBtn" style="background:#f1f3f5; border:1px solid #ddd; padding:8px 16px; border-radius:4px;">Annulla</button>
+        </div>
+      `;
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      fetch('?action=list-folders')
+        .then(r => r.json())
+        .then(folders => {
+          const select = document.getElementById('moveFolderSelect');
+          folders.forEach(folder => {
+            if (folder === path || folder.startsWith(path + '/')) return;
+            const opt = document.createElement('option');
+            opt.value = folder;
+            opt.textContent = folder;
+            select.appendChild(opt);
+          });
+        });
+      document.getElementById('moveCancelBtn').onclick = () => {
+        document.body.removeChild(modal);
+      };
+      document.getElementById('moveConfirmBtn').onclick = () => {
+        const target = document.getElementById('moveFolderSelect').value;
+        if (!target) {
+          alert('Seleziona una cartella.');
+          return;
+        }
+        document.body.removeChild(modal);
+        fetch('api.php', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: `action=move&file=${encodeURIComponent(path)}&target=${encodeURIComponent(target)}`
+        }).then(() => location.reload());
+      };
+    }
     fetch('?action=list')
       .then(r => r.json())
       .then(data => {
@@ -694,6 +686,15 @@ function downloadFile(filePath) {
           };
           folderDiv.appendChild(toggleSpan);
           folderDiv.appendChild(span);
+          <?php if ($loggedIn): ?>
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'file-actions';
+          actionsDiv.innerHTML = `
+            <button onclick="renameFolder('${item.path}')" title="Rinomina">🔄</button>
+            <button onclick="moveFolder('${item.path}')" title="Sposta">📁</button>
+          `;
+          folderDiv.appendChild(actionsDiv);
+          <?php endif; ?>
           li.appendChild(folderDiv);
           const nestedUl = document.createElement('ul');
           buildTree(item.children, nestedUl);
@@ -721,6 +722,28 @@ function downloadFile(filePath) {
       }
     }
     function editFile(path) { loadFile(path); }
+    function copyCode(filePath) {
+      const codeEditor = document.getElementById('codeEditor');
+      const content = codeEditor ? codeEditor.innerText : document.querySelector('.code-content').textContent;
+      navigator.clipboard.writeText(content).then(() => {
+        alert('✅ Codice copiato negli appunti!');
+      }).catch(() => {
+        alert('❌ Impossibile copiare.');
+      });
+    }
+    function downloadFile(filePath) {
+      const codeEditor = document.getElementById('codeEditor');
+      const content = codeEditor ? codeEditor.innerText : document.querySelector('.code-content').textContent;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filePath.split('/').pop();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
     document.getElementById('searchBox')?.addEventListener('input', async function() {
       const query = this.value.trim();
       const resultsDiv = document.getElementById('searchResults');
@@ -769,23 +792,24 @@ function downloadFile(filePath) {
         } else {
           totalResults.sort((a, b) => a.file.localeCompare(b.file));
           let html = '<div style="font-size:13px;">';
-totalResults.slice(0, 50).forEach((r, i) => {
-  html += `
-    <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #eee; cursor:pointer;" 
-         onclick="selectSearchResult('${r.file}', ${r.line}, '${query.replace(/'/g, "\\'")}');">
-      <div><strong>${r.file}</strong></div>
-      <div style="color:#555; margin-top:4px;">Riga ${r.line}</div>
-      <div style="margin-top:6px;">
-        <code>${r.content.replace(
-          new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
-          match => `<mark style="background:#fff38d; padding:0 2px;">${match}</mark>`
-        )}</code>
-      </div>
-    </div>
-  `;
-});
-html += '</div>';
-resultsDiv.innerHTML = html;
+          totalResults.slice(0, 50).forEach((r, i) => {
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            html += `
+              <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #eee; cursor:pointer;" 
+                   onclick="selectSearchResult('${r.file}', ${r.line}, '${query.replace(/'/g, "\\'")}');">
+                <div><strong>${r.file}</strong></div>
+                <div style="color:#555; margin-top:4px;">Riga ${r.line}</div>
+                <div style="margin-top:6px;">
+                  <code>${r.content.replace(
+                    new RegExp(escapedQuery, 'gi'),
+                    match => `<mark style="background:#fff38d; padding:0 2px;">${match}</mark>`
+                  )}</code>
+                </div>
+              </div>
+            `;
+          });
+          html += '</div>';
+          resultsDiv.innerHTML = html;
           if (totalResults.length > 0) {
             const first = totalResults[0];
             loadFileAndHighlight(first.file, first.line, query);
@@ -795,6 +819,9 @@ resultsDiv.innerHTML = html;
         resultsDiv.innerHTML = '<p style="color:red;">Errore durante la ricerca.</p>';
       }
     });
+    function selectSearchResult(filePath, lineNum, query) {
+      loadFileAndHighlight(filePath, lineNum, query);
+    }
     function loadFileAndHighlight(filePath, lineNum, query) {
       const contentDiv = document.getElementById('fileContent');
       contentDiv.innerHTML = '<p>🔄 Caricamento...</p>';
@@ -804,10 +831,10 @@ resultsDiv.innerHTML = html;
           const lines = code.split('\n');
           const lineNumbersHtml = lines.map((_, i) => `<div class="line-number">${i + 1}</div>`).join('');
           let codeLinesHtml = '';
+          const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp(`(${escapedQuery})`, 'gi');
           lines.forEach((line, i) => {
             if (i + 1 === lineNum) {
-              const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              const regex = new RegExp(`(${escapedQuery})`, 'gi');
               const highlighted = line.replace(regex, '<mark style="background:#fff38d; padding:0 2px;">$1</mark>');
               codeLinesHtml += `<div class="code-line">${highlighted}</div>`;
             } else {
@@ -816,7 +843,12 @@ resultsDiv.innerHTML = html;
           });
           if (<?php echo $loggedIn ? 'true' : 'false'; ?>) {
             contentDiv.innerHTML = `
-              <h3>${escapeHtml(filePath)}</h3>
+              <h3>${escapeHtml(filePath)}
+                <div style="float:right; font-size:12px;">
+                  <button onclick="copyCode('${escapeHtml(filePath)}')" title="Copia codice">📋</button>
+                  <button onclick="downloadFile('${escapeHtml(filePath)}')" title="Download file">⬇️</button>
+                </div>
+              </h3>
               <div class="editor-toolbar">
                 <button onclick="saveFile()">✅ Salva</button>
                 <button onclick="loadFile('${escapeHtml(filePath)}')">↺ Ricarica</button>
@@ -826,6 +858,14 @@ resultsDiv.innerHTML = html;
                 <div class="code-content" id="codeEditor" contenteditable="true" spellcheck="false">${codeLinesHtml}</div>
               </div>
             `;
+            const footerToolbar = document.createElement('div');
+            footerToolbar.className = 'editor-toolbar';
+            footerToolbar.style.marginTop = '16px';
+            footerToolbar.innerHTML = `
+              <button onclick="saveFile()">✅ Salva</button>
+              <button onclick="loadFile('${escapeHtml(filePath)}')">↺ Ricarica</button>
+            `;
+            contentDiv.appendChild(footerToolbar);
           } else {
             contentDiv.innerHTML = `
               <h3>${escapeHtml(filePath)}</h3>
@@ -843,15 +883,11 @@ resultsDiv.innerHTML = html;
               container.scrollTop = targetTop - container.clientHeight / 2 + lineHeight / 2;
             }
           }, 300);
-          
         })
         .catch(() => {
           contentDiv.innerHTML = '<p style="color:red">❌ Impossibile caricare il file.</p>';
         });
     }
-    function selectSearchResult(filePath, lineNum, query) {
-  loadFileAndHighlight(filePath, lineNum, query);
-}
     const menuToggle = document.getElementById('menuToggle');
     const closeSidebar = document.getElementById('closeSidebar');
     const sidebar = document.querySelector('.sidebar');
@@ -887,26 +923,6 @@ resultsDiv.innerHTML = html;
       };
       return map[ext] || 'plaintext';
     }
-    // Get the button:
-let mybutton = document.getElementById("myBtn");
-// When the user scrolls down 20px from the top of the document, show the button
-window.onscroll = function() {scrollFunction()};
-function scrollFunction() {
-  if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-    mybutton.style.display = "block";
-  } else {
-    mybutton.style.display = "none";
-  }
-}
-// When the user clicks on the button, scroll to the top of the document
-function topFunction() {
-  document.body.scrollTop = 0; // For Safari
-  document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
-}
   </script>
-  
-<footer class="site-footer">
-        <p>&copy; <script>document.write(new Date().getFullYear());</script> <a href="https://mrlab.altervista.org/" target="_blank" style="text-decoration: none; color: #fff; font-weight: bold;">MRLab Community</a> Tutti i diritti riservati</p>   
-    </footer>
 </body>
 </html>
