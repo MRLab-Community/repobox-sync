@@ -37,4 +37,4 @@ function getDB() {
         }
     }
     return $pdo;
-}
+}
