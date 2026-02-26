@@ -36,4 +36,4 @@ function logoutUser() {
     session_start();
     unset($_SESSION['repobox_user_id'], $_SESSION['repobox_username']);
     session_destroy();
-}
+}
