@@ -35,4 +35,4 @@ if ($zip->open($zipFile, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
     exit;
 } else {
     die('Errore nella creazione dello ZIP.');
-}
+}
