@@ -50,4 +50,4 @@ case 'move':
     default:
         http_response_code(400);
         exit('Azione non supportata');
-}
+}
