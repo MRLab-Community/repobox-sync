@@ -69,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($password, $user['password_hash'])) {
             clearAttempts($ip);
             $_SESSION['repobox_user_id'] = $user['id'];
+            $_SESSION['repobox_role'] = $user['role']; // Assicura che il ruolo venga salvato
             $_SESSION['repobox_username'] = $username;
             header('Location: repo.php');
             exit;
@@ -179,4 +180,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     © 2026 Repobox - MRLab Community • Tutti i diritti riservati
   </div>
 </body>
-</html>
+</html>
