@@ -1,0 +1,35 @@
+--- TENTATIVO LOGOUT: 2026-03-08 20:07:15 ---
+Session ID prima di destroy: f7dea9a77a34032be299976ec67c732d
+User ID in sessione prima: 2
+Cookie di sessione impostato per scadenza.
+session_destroy() eseguito.
+Session ID dopo destroy: 
+
+--- TENTATIVO LOGOUT: 2026-03-08 20:07:26 ---
+Session ID prima di destroy: f33e52acc4d87d020e03aea31bd2e98d
+User ID in sessione prima: Nessuno
+Cookie di sessione impostato per scadenza.
+session_destroy() eseguito.
+Session ID dopo destroy: 
+
+--- TENTATIVO LOGOUT: 2026-03-08 20:07:36 ---
+Session ID prima di destroy: 46cccb81320c1693ac671309d317e7d4
+User ID in sessione prima: Nessuno
+Cookie di sessione impostato per scadenza.
+session_destroy() eseguito.
+Session ID dopo destroy: 
+
+--- TENTATIVO LOGOUT: 2026-03-08 21:44:08 ---
+Session ID prima di destroy: 9e1d435c30ceacf7fe5711844c0c97e5
+User ID in sessione prima: Nessuno
+Cookie di sessione impostato per scadenza.
+session_destroy() eseguito.
+Session ID dopo destroy: 
+
+--- TENTATIVO LOGOUT: 2026-03-08 21:44:36 ---
+Session ID prima di destroy: 3fbdaed920ccd768a30517057757d229
+User ID in sessione prima: 2
+Cookie di sessione impostato per scadenza.
+session_destroy() eseguito.
+Session ID dopo destroy: 
+
