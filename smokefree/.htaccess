@@ -1,0 +1,12 @@
+# --- SICUREZZA SMOKEFREE ---
+# Blocca qualsiasi accesso HTTP diretto al file config.php nella cartella smokefree
+<Files "smokefree/config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Opzionale: Blocca anche l'accesso alla cartella install se non cancellata
+# <Files "smokefree/install.php">
+#     Order Allow,Deny
+#     Deny from all
+# </Files>
