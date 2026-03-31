@@ -1,0 +1,21 @@
+// Service Worker temporaneamente disattivato per debug login
+// Questo file vuoto forza il browser a ignorare qualsiasi caching precedente
+self.addEventListener('install', (e) => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (e) => {
+    // Forza la pulizia di TUTTE le cache esistenti
+    e.waitUntil(
+        caches.keys().then((keyList) => {
+            return Promise.all(keyList.map((key) => caches.delete(key)));
+        })
+    );
+    return clients.claim();
+});
+
+// Lascia passare tutte le richieste alla rete senza interferire
+self.addEventListener('fetch', (e) => {
+    // Non facciamo nulla, lasciamo che il browser gestisca la richiesta normalmente
+    return; 
+});
