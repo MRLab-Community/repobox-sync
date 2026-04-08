@@ -428,12 +428,93 @@
     </div>
 
     <!-- CTA Final -->
-    <div class="cta-box">
-        <h2>Il momento migliore era ieri. Il secondo migliore è adesso.</h2>
-        <p>Unisciti a chi ha già scelto di cambiare rotta. Crea il tuo account gratuito e inizia il primo passo del tuo viaggio.</p>
-        <a href="/smokefree/login.php" class="btn-main">Inizia il Tuo Viaggio →</a>
-        <p style="font-size: 0.8rem; margin-top: 15px; opacity: 0.8;">Registrazione rapida e sicura • Accesso immediato</p>
+    <!-- SOSTITUISCI IL BLOCCO CTA-BOX ESISTENTE CON QUESTO -->
+<div class="cta-box">
+    <h2>Il momento migliore era ieri. Il secondo migliore è adesso.</h2>
+    <p>Unisciti a chi ha già scelto di cambiare rotta. Scegli la piattaforma che preferisci:</p>
+    
+    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
+        <!-- Pulsante Web -->
+        <a href="/smokefree/login.php" class="btn-main" style="background: white; color: var(--primary-dark);">
+            🌐 Versione Web
+        </a>
+        
+        <!-- Pulsante App (con protezione) -->
+        <button onclick="openDownloadModal()" class="btn-main" style="background: #2c3e50; color: white; border: none; cursor: pointer;">
+            🤖 Scarica App Android
+        </button>
     </div>
+    
+    <p style="font-size: 0.8rem; margin-top: 15px; opacity: 0.8;">
+        Registrazione rapida e sicura • Accesso immediato • APK v1.0
+    </p>
+</div>
+
+<!-- MODALE DI SICUREZZA PER IL DOWNLOAD (Nascosta di default) -->
+<div id="download-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <h3 style="color: var(--secondary-color); margin-top: 0;">Verifica Sicurezza</h3>
+        <p style="color: #666; font-size: 0.9rem;">Per avviare il download, risolvi questa semplice operazione:</p>
+        
+        <div style="font-size: 1.5rem; font-weight: bold; margin: 20px 0; color: var(--primary-color);" id="captcha-question">
+            <!-- La domanda apparirà qui -->
+        </div>
+        
+        <input type="number" id="captcha-answer" placeholder="?" style="padding: 10px; font-size: 1.2rem; width: 80px; text-align: center; border: 2px solid #ddd; border-radius: 6px; margin-bottom: 15px;">
+        
+        <div id="captcha-error" style="color: red; font-size: 0.8rem; margin-bottom: 10px; display: none;">Risposta sbagliata, riprova!</div>
+        
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button onclick="closeDownloadModal()" style="padding: 10px 20px; background: #ccc; border: none; border-radius: 6px; cursor: pointer; color: #333;">Annulla</button>
+            <button onclick="verifyCaptcha()" style="padding: 10px 20px; background: var(--primary-color); border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: bold;">Scarica Ora</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Logica per la protezione del download
+    let captchaResult = 0;
+    const apkUrl = "/download/SmokeFreeTracker.apk";
+
+    function openDownloadModal() {
+        // Genera due numeri casuali tra 1 e 10
+        const num1 = Math.floor(Math.random() * 10) + 1;
+        const num2 = Math.floor(Math.random() * 10) + 1;
+        captchaResult = num1 + num2;
+        
+        document.getElementById('captcha-question').innerText = `${num1} + ${num2} = ?`;
+        document.getElementById('captcha-answer').value = '';
+        document.getElementById('captcha-error').style.display = 'none';
+        document.getElementById('download-modal').style.display = 'flex';
+        document.getElementById('captcha-answer').focus();
+    }
+
+    function closeDownloadModal() {
+        document.getElementById('download-modal').style.display = 'none';
+    }
+
+    function verifyCaptcha() {
+        const userAnswer = parseInt(document.getElementById('captcha-answer').value);
+        
+        if (userAnswer === captchaResult) {
+            // Risposta corretta: avvia il download
+            window.location.href = apkUrl;
+            closeDownloadModal();
+        } else {
+            // Risposta sbagliata: mostra errore e genera nuova domanda
+            document.getElementById('captcha-error').style.display = 'block';
+            // Opzionale: cambia domanda per sicurezza extra
+            openDownloadModal(); 
+        }
+    }
+
+    // Permetti di premere "Invio" per inviare la risposta
+    document.getElementById('captcha-answer').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            verifyCaptcha();
+        }
+    });
+</script>
 
 </div>
 
